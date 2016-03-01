@@ -26,5 +26,6 @@ config.middleware.reservations = [{ // reserved rooms. If you want specific room
 
 config.web.port = process.env.PORT || 9393;
 config.web.env = process.env.NODE_ENV || "development"; // environment, change to production
+config.web.roulettename = "roulette";
 
 module.exports = config;

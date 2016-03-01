@@ -143,7 +143,44 @@ app.get("/:rid", function( req, res ){
   // When a room is given through a reservation
   if (req.sessionId && req.apiKey && req.token) {
     sendRoomResponse(req.apiKey, req.sessionId, req.token);
-  } else {
+  }
+  else if(room_uppercase == config.web.roulettename.toUpperCase()) //roulette chat case, won't affect other stuff
+  {
+    //get session id of current waiter
+    storage.get(config.web.roulettename, function(reply){
+      if(reply && reply != false)
+      {
+        //there is currently a waiter, let's give his sessionId
+        req.sessionId = reply;
+        
+        //set that there is now waiter now
+        storage.set(config.web.roulettename, false, function(){
+            sendRoomResponse(OTKEY, req.sessionId, ot.generateToken(req.sessionId, {role: 'moderator'}));
+          });
+      }
+      else
+      {
+        //there is no waiter, requester will be a waiter then
+        ot.createSession( req.sessionProperties || {mediaMode: 'routed'} , function(err, session){
+          if (err) {
+            var payload;
+            if (config.web.env === 'development') {
+              payload = { error: err.message };
+            } else {
+              payload = { error: 'could not generate opentok session' };
+            }
+
+            return res.send(500, payload);
+          }
+
+          storage.set(config.web.roulettename, session.sessionId, function(){
+            sendRoomResponse(OTKEY, session.sessionId, ot.generateToken(session.sessionId, {role: 'moderator'}));
+          });
+        });
+      }
+    });
+  } 
+  else {
     // Check if room sessionId exists. If it does, render response. If not, create sessionId
     storage.get(room_uppercase, function(reply){
       if(reply){
